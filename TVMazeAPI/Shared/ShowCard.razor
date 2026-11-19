@@ -1,0 +1,25 @@
+
+
+<div class="card h-100">
+    @if(Show.Image?.Medium != null)
+        {
+            <img src="@Show.Image.Medium" class="card-img-top" alt="@Show.Name" />
+        }
+    <div class="card-body">
+        <h5 class="card-title">@Show.Name</h5>
+    @if (Subtitle != null)
+    {
+        <p class="card-text">@Subtitle</p>
+    }
+    </div>
+</div>
+
+@code{
+    [Parameter, EditorRequired]
+    public Show Show{get;set;} = new Show();
+
+    [Parameter]
+    public string? Subtitle{get;set;}
+
+    
+}
