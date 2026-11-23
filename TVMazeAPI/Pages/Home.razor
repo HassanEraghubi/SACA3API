@@ -1,53 +1,85 @@
 ﻿@page "/"
 @inject TvMazeService TvMaze
 
-<PageTitle>TV Finder</PageTitle>
-
-
-<EditForm Model="searchInput" OnValidSubmit="SearchAsync">
+<EditForm Model="searchInput" OnValidSubmit="SearchAsync" class="mb-4">
     <DataAnnotationsValidator />
 
     <div class="input-group">
-        <InputText type="search" class="form-control" placeholder="Search for a TV show..." @bind-Value="searchInput.Query"/>
-        <button type="submit" class="btn btn-primary">Search</button>
+        <InputText type="search" class="form-control" placeholder="Search for a TV show..." @bind-Value="searchInput.Query" />
+        <button type="submit" class="btn btn-primary" disabled="@isSearching">Search</button>
     </div>
     <ValidationMessage For="() => searchInput.Query" />
-
 </EditForm>
 
-<h1>Airing Today</h1>
-
-@if (errorMessage != null)
+@if (searchResults != null || isSearching || searchError != null)
 {
-    <div class ="alert alert-danger">
-        @errorMessage
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Search Results</h1>
+        <button type="button" class="btn btn-outline-secondary" @onclick="ClearSearch">Clear</button>
     </div>
-    
-}
-else if (schedule == null)
-{
-    <p>Loading...</p>
-}
-else if (schedule.Count == 0)
-{
-    <p>Nothing airing today.</p>
+
+    @if (searchError != null)
+    {
+        <div class="alert alert-danger">@searchError</div>
+    }
+    else if (isSearching)
+    {
+        <p>Searching...</p>
+    }
+    else if (searchResults!.Count == 0)
+    {
+        <p>No shows found for "@lastQuery".</p>
+    }
+    else
+    {
+        <div class="row row-cols-2 row-cols-md-4 g-3">
+            @foreach (var result in searchResults)
+            {
+                <div class="col">
+                    <ShowCard Show="result.Show" Subtitle="@ShowLabel(result.Show)" />
+                </div>
+            }
+        </div>
+    }
 }
 else
 {
-    <div class="row row-cols-2 row-cols-md-4 g-3">
+    
+
+
+    <h1>Airing Today</h1>
+
+    @if (errorMessage != null)
+    {
+        <div class ="alert alert-danger">
+            @errorMessage
+        </div>
         
-        @foreach (var item in schedule)
-        {
-            <div class="col">
-                <ShowCard Show="item.Show" Subtitle="@EpisodeLabel(item)" />
-            </div>
-        }
-    </div>
+    }
+    else if (schedule == null)
+    {
+        <p>Loading...</p>
+    }
+    else if (schedule.Count == 0)
+    {
+        <p>Nothing airing today.</p>
+    }
+    else
+    {
+        <div class="row row-cols-2 row-cols-md-4 g-3">
+            
+            @foreach (var item in schedule)
+            {
+                <div class="col">
+                    <ShowCard Show="item.Show" Subtitle="@EpisodeLabel(item)" />
+                </div>
+            }
+        </div>
+    }
 }
+
 @code{
     private List<ScheduleItem>? schedule;
-    private SearchInput searchInput = new();
-
     private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
@@ -65,9 +97,44 @@ else
     private static string EpisodeLabel(ScheduleItem item) =>
         $"S{item.Season} E{item.Number} – {item.Name}";
 
+
+    private SearchInput searchInput = new();
+    private List<SearchResult>? searchResults;
+    bool isSearching;
+    private string? searchError;
+    private string lastQuery = "";
     private async Task SearchAsync()
     {
-        Console.WriteLine($"Searching for: {searchInput.Query}");
+        searchError = null;
+        isSearching = true;
+        lastQuery = searchInput.Query;
+        try
+        {
+            searchResults = await TvMaze.SearchShowsAsync(searchInput.Query);
+        }
+        catch
+        {
+            searchError = "Couldn't Search, please try again";
+        }
+        finally
+        {
+            isSearching = false;
+        }
+    }
+
+    private void ClearSearch()
+    {
+        searchResults = null;
+        searchError = null;
+        searchInput = new();
+    }
+
+    private static string ShowLabel(Show show)
+    {
+        var genres = show.Genres.Count > 0 ? string.Join(",", show.Genres) : "No Genres";
+        var year = show.Premiered?.Year.ToString() ?? "Unknown year";
+
+        return $"{genres} . {year} ";
     }
 
 
