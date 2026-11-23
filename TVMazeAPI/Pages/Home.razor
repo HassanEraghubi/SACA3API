@@ -3,6 +3,18 @@
 
 <PageTitle>TV Finder</PageTitle>
 
+
+<EditForm Model="searchInput" OnValidSubmit="SearchAsync">
+    <DataAnnotationsValidator />
+
+    <div class="input-group">
+        <InputText type="search" class="form-control" placeholder="Search for a TV show..." @bind-Value="searchInput.Query"/>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+    <ValidationMessage For="() => searchInput.Query" />
+
+</EditForm>
+
 <h1>Airing Today</h1>
 
 @if (errorMessage != null)
@@ -34,6 +46,7 @@ else
 }
 @code{
     private List<ScheduleItem>? schedule;
+    private SearchInput searchInput = new();
 
     private string? errorMessage;
 
@@ -49,8 +62,17 @@ else
         }
     }
 
-        private static string EpisodeLabel(ScheduleItem item) =>
-            $"S{item.Season} E{item.Number} – {item.Name}";
+    private static string EpisodeLabel(ScheduleItem item) =>
+        $"S{item.Season} E{item.Number} – {item.Name}";
+
+    private async Task SearchAsync()
+    {
+        Console.WriteLine($"Searching for: {searchInput.Query}");
+    }
+
+
+    
+
 
 
 
