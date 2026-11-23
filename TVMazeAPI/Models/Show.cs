@@ -7,10 +7,10 @@ public class Show
         get;set;
     }
 
-    public string? Name
+    public string Name
     {
         get;set;
-    }
+    } = "";
 
     public List<string> Genres
     {
