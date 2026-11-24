@@ -1,16 +1,20 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="">📺 TV Finder</a>
         </div>
+    </nav>
 
-        <article class="content px-4">
-            @Body
-        </article>
+    <main class="container py-4 flex-grow-1">
+        @Body
     </main>
+
+    <footer class="border-top py-3 text-center text-muted small">
+        <div class="container">
+            TV data provided by <a href="https://www.tvmaze.com" target="_blank" rel="noopener">TVMaze</a>
+            under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA</a>.
+        </div>
+    </footer>
 </div>
