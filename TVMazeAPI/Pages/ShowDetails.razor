@@ -67,8 +67,11 @@ else
     </div>
 
     <h2 class="mt-5 mb-3">Cast</h2>
-
-    @if (cast.Count == 0)
+    @if (cast == null)
+    {
+        <p class="text-muted">Loading cast...</p>
+    }
+    else if (cast.Count == 0)
     {
         <p class="text-muted">No cast information available.</p>
     }
@@ -109,7 +112,12 @@ else
 
     <h2 class="mt-5 mb-3">Episodes</h2>
 
-    @if (episodes.Count == 0)
+    @if (episodes == null)
+    {
+        <p class="text-muted">Loading episodes...</p>
+
+    }
+    else if (episodes.Count == 0)
     {
         <p class="text-muted">No episode information available.</p>
     }
@@ -159,24 +167,24 @@ else
     private Show? show;
     private bool notFound;
     private string? errorMessage;
-    private List<CastMember> cast = new();
+    private List<CastMember>? cast;
     private bool showAllCast;
 
-    private List<Episode> episodes = new();
+    private List<Episode>? episodes;
     private int selectedSeason;
     private List<int> Seasons
     {
         get
         {
-            return episodes.Select(e => e.Season).Distinct().Order().ToList();
+            return episodes?.Select(e => e.Season).Distinct().Order().ToList() ?? new();
         }
-    }
+    } 
 
     private List<Episode> SelectedSeasonEpisodes
     {
         get
         {
-            return episodes.Where(e => e.Season == selectedSeason).ToList();
+            return episodes?.Where(e => e.Season == selectedSeason).ToList() ?? new();
         }
     }
 
@@ -185,9 +193,9 @@ else
         show = null;
         notFound = false;
         errorMessage = null;
-        cast = new();
+        cast = null;
         showAllCast = false;
-        episodes = new();
+        episodes = null;
         selectedSeason = 0;
 
         try
@@ -196,12 +204,12 @@ else
             var castTask = TvMaze.GetCastAsync(Id);
             var episodesTask = TvMaze.GetEpisodesAsync(Id);
 
-            await Task.WhenAll(showTask, castTask, episodesTask);
+            show = await showTask;
+            StateHasChanged();
+            cast = await castTask;
+            StateHasChanged();
+            episodes = await episodesTask;
 
-            show = showTask.Result;
-            cast = castTask.Result;
-            episodes = episodesTask.Result;
-            
             selectedSeason = Seasons.FirstOrDefault();
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
