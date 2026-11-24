@@ -5,7 +5,8 @@
     <DataAnnotationsValidator />
 
     <div class="input-group">
-        <InputText type="search" class="form-control" placeholder="Search for a TV show..." @bind-Value="searchInput.Query" />
+        <InputText type="search" class="form-control" placeholder="Search for a TV show..."
+                   @bind-Value="searchInput.Query" />
         <button type="submit" class="btn btn-primary" disabled="@isSearching">Search</button>
     </div>
     <ValidationMessage For="() => searchInput.Query" />
@@ -32,26 +33,55 @@
     }
     else
     {
-        <div class="row row-cols-2 row-cols-md-4 g-3">
-            @foreach (var result in searchResults)
-            {
-                <div class="col">
-                    <ShowCard Show="result.Show" Subtitle="@ShowLabel(result.Show)" />
-                </div>
-            }
+        <div class="d-flex flex-wrap gap-3 mb-3">
+            <div>
+                <label for="sort" class="form-label small mb-1">Sort by</label>
+                <select id="sort" class="form-select form-select-sm" @bind="selectedSort">
+                    <option value="@SortOption.Relevance">Relevance</option>
+                    <option value="@SortOption.Name">Name (A–Z)</option>
+                    <option value="@SortOption.Rating">Rating (highest first)</option>
+                    <option value="@SortOption.Newest">Newest first</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="genre" class="form-label small mb-1">Genre</label>
+                <select id="genre" class="form-select form-select-sm" @bind="selectedGenre">
+                    <option value="">All genres</option>
+                    @foreach (var genre in AvailableGenres)
+                    {
+                        <option value="@genre">@genre</option>
+                    }
+                </select>
+            </div>
         </div>
+
+        @if (DisplayedResults.Count == 0)
+        {
+            <p class="text-muted">No @selectedGenre shows in these results.</p>
+        }
+        else
+        {
+            <div class="row row-cols-2 row-cols-md-4 g-3">
+                @foreach (var result in DisplayedResults)
+                {
+                    <div class="col">
+                        <ShowCard Show="result.Show" Subtitle="@ShowLabel(result.Show)" />
+                    </div>
+                }
+            </div>
+        }
+        
     }
 }
 else
 {
-    
-
 
     <h1>Airing Today</h1>
 
     @if (errorMessage != null)
     {
-        <div class ="alert alert-danger">
+        <div class="alert alert-danger">
             @errorMessage
         </div>
         
@@ -78,9 +108,45 @@ else
     }
 }
 
-@code{
+@code {
     private List<ScheduleItem>? schedule;
     private string? errorMessage;
+    private SearchInput searchInput = new();
+    private List<SearchResult>? searchResults;
+    private bool isSearching;
+    private string? searchError;
+    private string lastQuery = "";
+
+    private SortOption selectedSort;
+    private string selectedGenre = "";
+
+    private List<string> AvailableGenres
+    {
+        get
+        {
+            return searchResults?.SelectMany(r => r.Show.Genres).Distinct().Order().ToList() ?? new();
+        }
+    }
+    private List<SearchResult> DisplayedResults
+    {
+        get
+        {
+            var results = searchResults ?? new();
+
+            var filtered = selectedGenre == "" ? results : results.Where(r => r.Show.Genres.Contains(selectedGenre)).ToList();
+
+            return selectedSort switch
+            {
+                SortOption.Name => filtered.OrderBy(r => r.Show.Name).ToList(),
+                SortOption.Rating => filtered.OrderByDescending(r => r.Show.Rating?.Average).ToList(),
+                SortOption.Newest => filtered.OrderByDescending(r => r.Show.Premiered).ToList(),
+                _ => filtered
+                
+            };
+
+
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -97,24 +163,20 @@ else
     private static string EpisodeLabel(ScheduleItem item) =>
         $"S{item.Season} E{item.Number} – {item.Name}";
 
-
-    private SearchInput searchInput = new();
-    private List<SearchResult>? searchResults;
-    bool isSearching;
-    private string? searchError;
-    private string lastQuery = "";
     private async Task SearchAsync()
     {
         searchError = null;
         isSearching = true;
         lastQuery = searchInput.Query;
+        selectedSort = SortOption.Relevance;
+        selectedGenre = "";
         try
         {
             searchResults = await TvMaze.SearchShowsAsync(searchInput.Query);
         }
         catch
         {
-            searchError = "Couldn't Search, please try again";
+            searchError = "Couldn't search, please try again";
         }
         finally
         {
@@ -131,16 +193,10 @@ else
 
     private static string ShowLabel(Show show)
     {
-        var genres = show.Genres.Count > 0 ? string.Join(",", show.Genres) : "No Genres";
+        var genres = show.Genres.Count > 0 ? string.Join(", ", show.Genres) : "No Genres";
         var year = show.Premiered?.Year.ToString() ?? "Unknown year";
 
-        return $"{genres} . {year} ";
+        return $"{genres} · {year} ";
     }
-
-
-    
-
-
-
 
 }
