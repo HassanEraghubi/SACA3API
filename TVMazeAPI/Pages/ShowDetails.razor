@@ -107,7 +107,50 @@ else
         }
     }
 
-    @* Episodes section goes here (step 3) *@
+    <h2 class="mt-5 mb-3">Episodes</h2>
+
+    @if (episodes.Count == 0)
+    {
+        <p class="text-muted">No episode information available.</p>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            @foreach (var season in Seasons)
+            {
+                <button type="button" class="btn btn-sm @(season == selectedSeason ? "btn-primary" : "btn-outline-primary")"
+                        @onclick="() => selectedSeason = season">
+                    Season @season
+                </button>
+            }
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Air date</th>
+                        <th>Runtime</th>
+                        <th>Rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var episode in SelectedSeasonEpisodes)
+                    {
+                        <tr>
+                            <td>@(episode.Number?.ToString() ?? "Special")</td>
+                            <td>@episode.Name</td>
+                            <td>@(string.IsNullOrEmpty(episode.AirDate) ? "TBA" : episode.AirDate)</td>
+                            <td>@(episode.Runtime != null ? $"{episode.Runtime} min" : "–")</td>
+                            <td>@(episode.Rating?.Average?.ToString() ?? "–")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 }
 
 @code {
@@ -116,6 +159,26 @@ else
     private Show? show;
     private bool notFound;
     private string? errorMessage;
+    private List<CastMember> cast = new();
+    private bool showAllCast;
+
+    private List<Episode> episodes = new();
+    private int selectedSeason;
+    private List<int> Seasons
+    {
+        get
+        {
+            return episodes.Select(e => e.Season).Distinct().Order().ToList();
+        }
+    }
+
+    private List<Episode> SelectedSeasonEpisodes
+    {
+        get
+        {
+            return episodes.Where(e => e.Season == selectedSeason).ToList();
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -124,16 +187,22 @@ else
         errorMessage = null;
         cast = new();
         showAllCast = false;
+        episodes = new();
+        selectedSeason = 0;
 
         try
         {
             var showTask = TvMaze.GetShowAsync(Id);
             var castTask = TvMaze.GetCastAsync(Id);
+            var episodesTask = TvMaze.GetEpisodesAsync(Id);
 
-            await Task.WhenAll(showTask, castTask);
+            await Task.WhenAll(showTask, castTask, episodesTask);
 
             show = showTask.Result;
             cast = castTask.Result;
+            episodes = episodesTask.Result;
+            
+            selectedSeason = Seasons.FirstOrDefault();
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -145,7 +214,4 @@ else
         }
     }
 
-    private List<CastMember> cast = new();
-    private bool showAllCast;
-    
 }
