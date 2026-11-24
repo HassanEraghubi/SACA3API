@@ -6,7 +6,9 @@
             <img src="@Show.Image.Medium" class="card-img-top" alt="@Show.Name" />
         }
     <div class="card-body">
-        <h5 class="card-title">@Show.Name</h5>
+        <h5 class="card-title">
+            <a href="show/@Show.ID" class="stretched-link text-decoration-none">@Show.Name</a>
+        </h5>
     @if (Subtitle != null)
     {
         <p class="card-text">@Subtitle</p>
